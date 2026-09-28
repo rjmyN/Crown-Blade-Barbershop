@@ -136,42 +136,64 @@ document.addEventListener('DOMContentLoaded', function () {
     const bookingForm = document.getElementById('bookingForm');
     const bookingConfirmation = document.getElementById('bookingConfirmation');
 
-    // Set minimum date to today
-    const dateInput = document.getElementById('date');
-    const today = new Date().toISOString().split('T')[0];
-    dateInput.setAttribute('min', today);
+    if (bookingForm) {
+        bookingForm.addEventListener('submit', function (e) {
+            // Validate calendar selections
+            if (!selectedDate || !selectedTime) {
+                e.preventDefault();
+                alert('⚠️ Please select a date and time slot from the calendar above before booking.');
+                return false;
+            }
 
-    bookingForm.addEventListener('submit', function (e) {
-        // Don't prevent default - let form submit to Formspree
-        // e.preventDefault();
+            // Get form data for logging
+            const formData = {
+                fullName: document.getElementById('fullName').value,
+                phone: document.getElementById('phone').value,
+                email: document.getElementById('email').value,
+                service: document.getElementById('service').value,
+                date: formatDate(selectedDate),
+                time: selectedTime,
+                message: document.getElementById('message').value
+            };
 
-        // Get form data for logging
-        const formData = {
-            fullName: document.getElementById('fullName').value,
-            phone: document.getElementById('phone').value,
-            email: document.getElementById('email').value,
-            service: document.getElementById('service').value,
-            date: document.getElementById('date').value,
-            time: document.getElementById('time').value,
-            message: document.getElementById('message').value
-        };
+            // Log form data for debugging
+            console.log('✅ Booking Request Submitted:', formData);
 
-        // Log form data for debugging
-        console.log('Booking Request:', formData);
+            // Store booking data in localStorage
+            localStorage.setItem('lastBooking', JSON.stringify(formData));
 
-        // Store booking data in localStorage
-        localStorage.setItem('lastBooking', JSON.stringify(formData));
-
-        // Note: Form will submit automatically to Formspree
-        // Email will be sent automatically to princenatem@gmail.com
-    });
+            // Form will submit automatically to Web3Forms
+            // Email will be sent to princenatem@gmail.com
+        });
+    }
 
     // Reset booking form function (global scope)
     window.resetBookingForm = function () {
-        bookingForm.reset();
-        bookingForm.style.display = 'block';
-        bookingConfirmation.classList.add('hidden');
-        bookingForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (bookingForm && bookingConfirmation) {
+            bookingForm.reset();
+            bookingForm.style.display = 'block';
+            bookingConfirmation.classList.add('hidden');
+            bookingForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Reset calendar selections
+        selectedDate = null;
+        selectedTime = null;
+
+        // Disable submit button again
+        const submitBtn = document.getElementById('submitBookingBtn');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+        }
+
+        // Reset summary
+        const summary = document.getElementById('bookingSummary');
+        if (summary) {
+            summary.style.display = 'none';
+        }
+
+        // Regenerate calendar
+        generateCalendar(currentMonth, currentYear);
     };
 
 
@@ -757,8 +779,8 @@ function generateCalendar(month, year) {
         // Highlight selected date
         if (selectedDate) {
             const selDate = new Date(selectedDate);
-            if (selDate.getFullYear() === year && 
-                selDate.getMonth() === month && 
+            if (selDate.getFullYear() === year &&
+                selDate.getMonth() === month &&
                 selDate.getDate() === day) {
                 dayCell.classList.add('selected');
             }
@@ -771,80 +793,80 @@ function generateCalendar(month, year) {
 function selectDate(year, month, day) {
     selectedDate = new Date(year, month, day);
     selectedTime = null; // Reset time selection
-    
+
     // Update calendar UI
     generateCalendar(month, year);
-    
+
     // Show time slots
     generateTimeSlots();
-    
+
     // Update display
     const dateDisplay = document.getElementById('selectedDateDisplay');
     const dateText = document.getElementById('selectedDateText');
     const instruction = document.getElementById('timeSlotInstruction');
-    
+
     if (dateDisplay && dateText && instruction) {
         dateDisplay.style.display = 'block';
         instruction.style.display = 'none';
-        
+
         const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
         dateText.textContent = selectedDate.toLocaleDateString('en-US', options);
     }
-    
+
     // Update hidden form field
     const hiddenDateField = document.getElementById('selectedDate');
     if (hiddenDateField) {
         hiddenDateField.value = formatDate(selectedDate);
     }
-    
+
     updateBookingSummary();
 }
 
 function generateTimeSlots() {
     const timeSlotsGrid = document.getElementById('timeSlotsGrid');
     if (!timeSlotsGrid) return;
-    
+
     timeSlotsGrid.innerHTML = '';
-    
+
     const dateKey = formatDate(selectedDate);
     const booked = bookedSlots[dateKey] || [];
-    
+
     timeSlots.forEach(time => {
         const slot = document.createElement('button');
         slot.type = 'button';
         slot.className = 'time-slot';
         slot.textContent = time;
-        
+
         if (booked.includes(time)) {
             slot.classList.add('booked');
             slot.disabled = true;
         } else {
             slot.addEventListener('click', () => selectTimeSlot(time, slot));
         }
-        
+
         timeSlotsGrid.appendChild(slot);
     });
 }
 
 function selectTimeSlot(time, slotElement) {
     selectedTime = time;
-    
+
     // Remove previous selection
     document.querySelectorAll('.time-slot').forEach(slot => {
         slot.classList.remove('selected');
     });
-    
+
     // Add selection to clicked slot
     slotElement.classList.add('selected');
-    
+
     // Update hidden form field
     const hiddenTimeField = document.getElementById('selectedTime');
     if (hiddenTimeField) {
         hiddenTimeField.value = time;
     }
-    
+
     updateBookingSummary();
-    
+
     // Enable submit button
     const submitBtn = document.getElementById('submitBookingBtn');
     if (submitBtn) {
@@ -865,28 +887,28 @@ function updateBookingSummary() {
     const summaryTime = document.getElementById('summaryTime');
     const summaryService = document.getElementById('summaryService');
     const serviceSelect = document.getElementById('service');
-    
+
     if (!summary || !summaryDate || !summaryTime || !summaryService) return;
-    
+
     if (selectedDate) {
         const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
         summaryDate.textContent = selectedDate.toLocaleDateString('en-US', options);
     } else {
         summaryDate.textContent = '-';
     }
-    
+
     if (selectedTime) {
         summaryTime.textContent = selectedTime;
     } else {
         summaryTime.textContent = '-';
     }
-    
+
     if (serviceSelect && serviceSelect.value) {
         summaryService.textContent = serviceSelect.value;
     } else {
         summaryService.textContent = '-';
     }
-    
+
     // Show summary if date is selected
     if (selectedDate || selectedTime) {
         summary.style.display = 'block';
@@ -920,26 +942,6 @@ if (document.getElementById('calendarGrid')) {
     generateCalendar(currentMonth, currentYear);
 }
 
-// Update booking form submission to include calendar data
-const originalBookingForm = document.getElementById('bookingForm');
-if (originalBookingForm) {
-    originalBookingForm.addEventListener('submit', function(e) {
-        // Validate date and time are selected
-        if (!selectedDate || !selectedTime) {
-            e.preventDefault();
-            alert('Please select a date and time slot before booking.');
-            return false;
-        }
-        
-        // Form will submit to Web3Forms with all data
-        console.log('Booking submitted:', {
-            date: formatDate(selectedDate),
-            time: selectedTime,
-            name: document.getElementById('fullName').value,
-            service: document.getElementById('service').value
-        });
-    });
-}
-
 console.log('✓ Booking calendar system initialized');
 console.log('✓ Before & After slider initialized');
+
