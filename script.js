@@ -605,3 +605,341 @@ if ('serviceWorker' in navigator) {
 }
 
 
+
+
+// ============================================
+// BEFORE & AFTER TRANSFORMATION SLIDER
+// ============================================
+
+let currentSlide = 0;
+const slides = document.querySelectorAll('.transformation-slide');
+const dots = document.querySelectorAll('.dot');
+const totalSlides = slides.length;
+
+function showSlide(index) {
+    // Wrap around
+    if (index >= totalSlides) {
+        currentSlide = 0;
+    } else if (index < 0) {
+        currentSlide = totalSlides - 1;
+    } else {
+        currentSlide = index;
+    }
+
+    // Hide all slides
+    slides.forEach(slide => slide.classList.remove('active'));
+    dots.forEach(dot => dot.classList.remove('active'));
+
+    // Show current slide
+    slides[currentSlide].classList.add('active');
+    dots[currentSlide].classList.add('active');
+}
+
+// Next/Previous buttons
+document.getElementById('prevSlide')?.addEventListener('click', () => {
+    showSlide(currentSlide - 1);
+});
+
+document.getElementById('nextSlide')?.addEventListener('click', () => {
+    showSlide(currentSlide + 1);
+});
+
+// Dots navigation
+dots.forEach((dot, index) => {
+    dot.addEventListener('click', () => {
+        showSlide(index);
+    });
+});
+
+// Auto-play slider (optional - every 5 seconds)
+let sliderInterval = setInterval(() => {
+    showSlide(currentSlide + 1);
+}, 5000);
+
+// Pause auto-play on hover
+document.querySelector('.transformation-slider-container')?.addEventListener('mouseenter', () => {
+    clearInterval(sliderInterval);
+});
+
+document.querySelector('.transformation-slider-container')?.addEventListener('mouseleave', () => {
+    sliderInterval = setInterval(() => {
+        showSlide(currentSlide + 1);
+    }, 5000);
+});
+
+// Keyboard navigation
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') {
+        showSlide(currentSlide - 1);
+    } else if (e.key === 'ArrowRight') {
+        showSlide(currentSlide + 1);
+    }
+});
+
+
+// ============================================
+// BOOKING CALENDAR SYSTEM
+// ============================================
+
+let selectedDate = null;
+let selectedTime = null;
+let currentMonth = new Date().getMonth();
+let currentYear = new Date().getFullYear();
+
+const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+const timeSlots = [
+    '08:00 AM', '08:30 AM', '09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM',
+    '11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM', '01:00 PM', '01:30 PM',
+    '02:00 PM', '02:30 PM', '03:00 PM', '03:30 PM', '04:00 PM', '04:30 PM',
+    '05:00 PM', '05:30 PM', '06:00 PM', '06:30 PM', '07:00 PM', '07:30 PM'
+];
+
+// For demo purposes - randomly mark some slots as booked
+const bookedSlots = {
+    // Format: 'YYYY-MM-DD': ['08:00 AM', '09:00 AM', ...]
+};
+
+function generateCalendar(month, year) {
+    const calendarGrid = document.getElementById('calendarGrid');
+    if (!calendarGrid) return;
+
+    calendarGrid.innerHTML = '';
+
+    // Update month display
+    const monthDisplay = document.getElementById('currentMonth');
+    if (monthDisplay) {
+        monthDisplay.textContent = `${monthNames[month]} ${year}`;
+    }
+
+    // Add day headers
+    const dayHeaders = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    dayHeaders.forEach(day => {
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'calendar-day day-header';
+        dayHeader.textContent = day;
+        calendarGrid.appendChild(dayHeader);
+    });
+
+    // Get first day of month and number of days
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Add empty cells for days before month starts
+    for (let i = 0; i < firstDay; i++) {
+        const emptyDay = document.createElement('div');
+        emptyDay.className = 'calendar-day empty';
+        calendarGrid.appendChild(emptyDay);
+    }
+
+    // Add days of the month
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dayCell = document.createElement('div');
+        dayCell.className = 'calendar-day';
+        dayCell.textContent = day;
+
+        const cellDate = new Date(year, month, day);
+        cellDate.setHours(0, 0, 0, 0);
+
+        // Check if date is in the past
+        if (cellDate < today) {
+            dayCell.classList.add('past');
+        } else {
+            dayCell.classList.add('available');
+            dayCell.addEventListener('click', () => selectDate(year, month, day));
+        }
+
+        // Highlight selected date
+        if (selectedDate) {
+            const selDate = new Date(selectedDate);
+            if (selDate.getFullYear() === year && 
+                selDate.getMonth() === month && 
+                selDate.getDate() === day) {
+                dayCell.classList.add('selected');
+            }
+        }
+
+        calendarGrid.appendChild(dayCell);
+    }
+}
+
+function selectDate(year, month, day) {
+    selectedDate = new Date(year, month, day);
+    selectedTime = null; // Reset time selection
+    
+    // Update calendar UI
+    generateCalendar(month, year);
+    
+    // Show time slots
+    generateTimeSlots();
+    
+    // Update display
+    const dateDisplay = document.getElementById('selectedDateDisplay');
+    const dateText = document.getElementById('selectedDateText');
+    const instruction = document.getElementById('timeSlotInstruction');
+    
+    if (dateDisplay && dateText && instruction) {
+        dateDisplay.style.display = 'block';
+        instruction.style.display = 'none';
+        
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        dateText.textContent = selectedDate.toLocaleDateString('en-US', options);
+    }
+    
+    // Update hidden form field
+    const hiddenDateField = document.getElementById('selectedDate');
+    if (hiddenDateField) {
+        hiddenDateField.value = formatDate(selectedDate);
+    }
+    
+    updateBookingSummary();
+}
+
+function generateTimeSlots() {
+    const timeSlotsGrid = document.getElementById('timeSlotsGrid');
+    if (!timeSlotsGrid) return;
+    
+    timeSlotsGrid.innerHTML = '';
+    
+    const dateKey = formatDate(selectedDate);
+    const booked = bookedSlots[dateKey] || [];
+    
+    timeSlots.forEach(time => {
+        const slot = document.createElement('button');
+        slot.type = 'button';
+        slot.className = 'time-slot';
+        slot.textContent = time;
+        
+        if (booked.includes(time)) {
+            slot.classList.add('booked');
+            slot.disabled = true;
+        } else {
+            slot.addEventListener('click', () => selectTimeSlot(time, slot));
+        }
+        
+        timeSlotsGrid.appendChild(slot);
+    });
+}
+
+function selectTimeSlot(time, slotElement) {
+    selectedTime = time;
+    
+    // Remove previous selection
+    document.querySelectorAll('.time-slot').forEach(slot => {
+        slot.classList.remove('selected');
+    });
+    
+    // Add selection to clicked slot
+    slotElement.classList.add('selected');
+    
+    // Update hidden form field
+    const hiddenTimeField = document.getElementById('selectedTime');
+    if (hiddenTimeField) {
+        hiddenTimeField.value = time;
+    }
+    
+    updateBookingSummary();
+    
+    // Enable submit button
+    const submitBtn = document.getElementById('submitBookingBtn');
+    if (submitBtn) {
+        submitBtn.disabled = false;
+    }
+}
+
+function formatDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function updateBookingSummary() {
+    const summary = document.getElementById('bookingSummary');
+    const summaryDate = document.getElementById('summaryDate');
+    const summaryTime = document.getElementById('summaryTime');
+    const summaryService = document.getElementById('summaryService');
+    const serviceSelect = document.getElementById('service');
+    
+    if (!summary || !summaryDate || !summaryTime || !summaryService) return;
+    
+    if (selectedDate) {
+        const options = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+        summaryDate.textContent = selectedDate.toLocaleDateString('en-US', options);
+    } else {
+        summaryDate.textContent = '-';
+    }
+    
+    if (selectedTime) {
+        summaryTime.textContent = selectedTime;
+    } else {
+        summaryTime.textContent = '-';
+    }
+    
+    if (serviceSelect && serviceSelect.value) {
+        summaryService.textContent = serviceSelect.value;
+    } else {
+        summaryService.textContent = '-';
+    }
+    
+    // Show summary if date is selected
+    if (selectedDate || selectedTime) {
+        summary.style.display = 'block';
+    }
+}
+
+// Month navigation
+document.getElementById('prevMonth')?.addEventListener('click', () => {
+    currentMonth--;
+    if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear--;
+    }
+    generateCalendar(currentMonth, currentYear);
+});
+
+document.getElementById('nextMonth')?.addEventListener('click', () => {
+    currentMonth++;
+    if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear++;
+    }
+    generateCalendar(currentMonth, currentYear);
+});
+
+// Update summary when service changes
+document.getElementById('service')?.addEventListener('change', updateBookingSummary);
+
+// Initialize calendar on page load
+if (document.getElementById('calendarGrid')) {
+    generateCalendar(currentMonth, currentYear);
+}
+
+// Update booking form submission to include calendar data
+const originalBookingForm = document.getElementById('bookingForm');
+if (originalBookingForm) {
+    originalBookingForm.addEventListener('submit', function(e) {
+        // Validate date and time are selected
+        if (!selectedDate || !selectedTime) {
+            e.preventDefault();
+            alert('Please select a date and time slot before booking.');
+            return false;
+        }
+        
+        // Form will submit to Web3Forms with all data
+        console.log('Booking submitted:', {
+            date: formatDate(selectedDate),
+            time: selectedTime,
+            name: document.getElementById('fullName').value,
+            service: document.getElementById('service').value
+        });
+    });
+}
+
+console.log('✓ Booking calendar system initialized');
+console.log('✓ Before & After slider initialized');
