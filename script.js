@@ -863,6 +863,7 @@ function selectTimeSlot(time, slotElement) {
     const hiddenTimeField = document.getElementById('selectedTime');
     if (hiddenTimeField) {
         hiddenTimeField.value = time;
+        console.log('✅ Time slot selected:', time);
     }
 
     updateBookingSummary();
@@ -871,6 +872,11 @@ function selectTimeSlot(time, slotElement) {
     const submitBtn = document.getElementById('submitBookingBtn');
     if (submitBtn) {
         submitBtn.disabled = false;
+        submitBtn.style.opacity = '1';
+        submitBtn.style.cursor = 'pointer';
+        console.log('✅ Submit button ENABLED');
+    } else {
+        console.error('❌ Submit button not found!');
     }
 }
 
@@ -941,6 +947,34 @@ document.getElementById('service')?.addEventListener('change', updateBookingSumm
 if (document.getElementById('calendarGrid')) {
     generateCalendar(currentMonth, currentYear);
 }
+
+// ============================================
+// BOOKING FORM SUBMISSION HANDLER
+// ============================================
+document.addEventListener('DOMContentLoaded', function () {
+    const bookingForm = document.getElementById('bookingForm');
+
+    if (bookingForm) {
+        bookingForm.addEventListener('submit', function (e) {
+            // Check if date and time are selected
+            const hiddenDate = document.getElementById('selectedDate');
+            const hiddenTime = document.getElementById('selectedTime');
+
+            if (!hiddenDate || !hiddenDate.value || !hiddenTime || !hiddenTime.value) {
+                e.preventDefault();
+                alert('⚠️ Please select a date and time slot from the calendar above before booking.');
+                return false;
+            }
+
+            // Log successful booking
+            console.log('✅ Booking Form Submitted Successfully');
+            console.log('Date:', hiddenDate.value);
+            console.log('Time:', hiddenTime.value);
+
+            // Form will submit to Web3Forms automatically
+        });
+    }
+});
 
 console.log('✓ Booking calendar system initialized');
 console.log('✓ Before & After slider initialized');
