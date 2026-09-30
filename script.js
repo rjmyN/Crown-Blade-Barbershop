@@ -979,3 +979,103 @@ document.addEventListener('DOMContentLoaded', function () {
 console.log('✓ Booking calendar system initialized');
 console.log('✓ Before & After slider initialized');
 
+
+
+// ============================================
+// PRICE CALCULATOR FUNCTIONALITY
+// ============================================
+
+document.addEventListener('DOMContentLoaded', function () {
+    const calcServices = document.querySelectorAll('.calc-service');
+    const selectedServicesList = document.getElementById('selectedServicesList');
+    const subtotalAmount = document.getElementById('subtotalAmount');
+    const totalAmount = document.getElementById('totalAmount');
+    const clearButton = document.getElementById('clearCalculator');
+    const bookButton = document.getElementById('bookFromCalculator');
+
+    let selectedServices = [];
+
+    // Handle service selection
+    calcServices.forEach(checkbox => {
+        checkbox.addEventListener('change', function () {
+            const serviceName = this.dataset.name;
+            const servicePrice = parseInt(this.dataset.price);
+
+            if (this.checked) {
+                // Add service
+                selectedServices.push({
+                    name: serviceName,
+                    price: servicePrice
+                });
+                console.log('✅ Service added:', serviceName, 'KSh', servicePrice);
+            } else {
+                // Remove service
+                selectedServices = selectedServices.filter(s => s.name !== serviceName);
+                console.log('❌ Service removed:', serviceName);
+            }
+
+            updateCalculatorDisplay();
+        });
+    });
+
+    function updateCalculatorDisplay() {
+        // Clear list
+        selectedServicesList.innerHTML = '';
+
+        if (selectedServices.length === 0) {
+            selectedServicesList.innerHTML = '<p class="no-services">No services selected yet</p>';
+            subtotalAmount.textContent = 'KSh 0';
+            totalAmount.textContent = 'KSh 0';
+            return;
+        }
+
+        // Display selected services
+        selectedServices.forEach(service => {
+            const serviceItem = document.createElement('div');
+            serviceItem.className = 'selected-service-item';
+            serviceItem.innerHTML = `
+                <span class="selected-service-name">${service.name}</span>
+                <span class="selected-service-price">KSh ${service.price}</span>
+            `;
+            selectedServicesList.appendChild(serviceItem);
+        });
+
+        // Calculate totals
+        const subtotal = selectedServices.reduce((sum, service) => sum + service.price, 0);
+        const total = subtotal; // Add tax/discount logic here if needed
+
+        subtotalAmount.textContent = `KSh ${subtotal.toLocaleString()}`;
+        totalAmount.textContent = `KSh ${total.toLocaleString()}`;
+
+        console.log('💰 Total calculated:', total);
+    }
+
+    // Clear all selections
+    if (clearButton) {
+        clearButton.addEventListener('click', function () {
+            calcServices.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            selectedServices = [];
+            updateCalculatorDisplay();
+            console.log('🗑️ Calculator cleared');
+        });
+    }
+
+    // Book button - scroll to booking and pre-fill service
+    if (bookButton) {
+        bookButton.addEventListener('click', function (e) {
+            if (selectedServices.length === 0) {
+                e.preventDefault();
+                alert('Please select at least one service to book.');
+                return;
+            }
+
+            // Store selected services in localStorage for booking form
+            localStorage.setItem('calculatedServices', JSON.stringify(selectedServices));
+            console.log('📅 Proceeding to booking with services:', selectedServices);
+        });
+    }
+
+    console.log('✓ Price calculator initialized');
+});
